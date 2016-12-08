@@ -1,11 +1,8 @@
---Begin msg_checks.lua
---Begin pre_process function
 local function pre_process(msg)
--- Begin 'RondoMsgChecks' text checks by @rondoozle
 if is_chat_msg(msg) or is_super_group(msg) then
 	if msg and not is_momod(msg) and not is_whitelisted(msg.from.id) then --if regular user
 	local data = load_data(_config.moderation.data)
-	local print_name = user_print_name(msg.from):gsub("‮", "") -- get rid of rtl in names
+	local print_name = user_print_name(msg.from):gsub("?", "") -- get rid of rtl in names
 	local name_log = print_name:gsub("_", " ") -- name for log
 	local to_chat = msg.to.type == 'chat'
 	if data[tostring(msg.to.id)] and data[tostring(msg.to.id)]['settings'] then
@@ -53,6 +50,11 @@ if is_chat_msg(msg) or is_super_group(msg) then
 	else
 		lock_contacts = 'no'
 	end
+	if settings.username then
+		username = settings.username
+	else
+		username = 'no'
+	end
 	if settings.strict then
 		strict = settings.strict
 	else
@@ -67,7 +69,7 @@ if is_chat_msg(msg) or is_super_group(msg) then
 		if msg.text then -- msg.text checks
 			local _nl, ctrl_chars = string.gsub(msg.text, '%c', '')
 			 local _nl, real_digits = string.gsub(msg.text, '%d', '')
-			if lock_spam == "yes" and string.len(msg.text) > 2049 or ctrl_chars > 450 or real_digits > 2000 then
+				if lock_spam == "yes" and string.len(msg.text) > 2049 or ctrl_chars > 450 or real_digits > 2000 then
 				delete_msg(msg.id, ok_cb, false)
 				if strict == "yes" or to_chat then
 					delete_msg(msg.id, ok_cb, false)
@@ -81,8 +83,8 @@ if is_chat_msg(msg) or is_super_group(msg) then
 				if strict == "yes" or to_chat then
 					kick_user(msg.from.id, msg.to.id)
 				end
-		end
-		if msg.service then 
+			end
+			if msg.service then 
 			if lock_tgservice == "yes" then
 				delete_msg(msg.id, ok_cb, false)
 				if to_chat then
@@ -98,7 +100,7 @@ if is_chat_msg(msg) or is_super_group(msg) then
 				end
 			end
 			local print_name = msg.from.print_name
-			local is_rtl = print_name:match("‮") or msg.text:match("‮")
+			local is_rtl = print_name:match("?") or msg.text:match("?")
 			if is_rtl and lock_rtl == "yes" then
 				delete_msg(msg.id, ok_cb, false)
 				if strict == "yes" or to_chat then
@@ -130,7 +132,7 @@ if is_chat_msg(msg) or is_super_group(msg) then
 				end
 			end
 			if msg.media.description then
-				local is_link_desc = msg.media.description:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Mm][Ee]/") or msg.media.description:match("[Tt][Ll][Gg][Rr][Mm].[Mm][Ee]/")
+				local is_link_desc = msg.media.description:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Mm][Ee]/") or msg.media.description:match("[Tt][Ll][Gg][Rr][Mm].[Mm][Ee]/") or msg.media.title:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Mm][Ee]/") or msg.media.title:match("[Tt][Ll][Gg][Rr][Mm].[Mm][Ee]/") or msg.media.caption:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Mm][Ee]/") or msg.media.caption:match("[Tt][Ll][Gg][Rr][Mm].[Mm][Ee]/")
 				if is_link_desc and lock_link == "yes" then
 					delete_msg(msg.id, ok_cb, false)
 					if strict == "yes" or to_chat then
@@ -153,6 +155,7 @@ if is_chat_msg(msg) or is_super_group(msg) then
 						kick_user(msg.from.id, msg.to.id)
 					end
 				end
+
 				local is_squig_caption = msg.media.caption:match("[\216-\219][\128-\191]")
 					if is_squig_caption and lock_arabic == "yes" then
 						delete_msg(msg.id, ok_cb, false)
@@ -160,8 +163,15 @@ if is_chat_msg(msg) or is_super_group(msg) then
 							kick_user(msg.from.id, msg.to.id)
 						end
 					end
-				local is_username_caption = msg.media.caption:match("^@[%a%d]")
+			local is_username_caption = msg.media.caption:match("^@[%a%d]")
 				if is_username_caption and lock_link == "yes" then
+					delete_msg(msg.id, ok_cb, false)
+					if strict == "yes" or to_chat then
+						kick_user(msg.from.id, msg.to.id)
+					end
+				end
+				local is_username_caption = msg.media.caption:match("@") or msg.media.caption:match("@[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz][ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz][ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz][ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz][ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]")
+				if is_username_caption and username == "yes" then
 					delete_msg(msg.id, ok_cb, false)
 					if strict == "yes" or to_chat then
 						kick_user(msg.from.id, msg.to.id)
@@ -216,7 +226,7 @@ if is_chat_msg(msg) or is_super_group(msg) then
 		end
 		if msg.fwd_from then
 			if msg.fwd_from.title then
-				local is_link_title = msg.fwd_from.title:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Mm][Ee]/") or msg.fwd_from.title:match("[Tt][Ll][Gg][Rr][Mm].[Mm][Ee]/")
+				local is_link_title = msg.fwd_from.title:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Mm][Ee]/") or msg.fwd_from.title:match("[Tt][Ll][Gg][Rr][Mm].[Mm][Ee]/") or msg.fwd_from.title:match("@[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]") or msg.media.description:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Mm][Ee]/") or msg.media.description:match("[Tt][Ll][Gg][Rr][Mm].[Mm][Ee]/") or msg.media.title:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Mm][Ee]/") or msg.media.title:match("[Tt][Ll][Gg][Rr][Mm].[Mm][Ee]/") or msg.media.title:match("@[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]") or msg.media.description:match("@[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]") or msg.media.caption:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Mm][Ee]/") or msg.media.caption:match("[Tt][Ll][Gg][Rr][Mm].[Mm][Ee]/") or msg.media.caption:match("@[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]")
 				if is_link_title and lock_link == "yes" then
 					delete_msg(msg.id, ok_cb, false)
 					if strict == "yes" or to_chat then
@@ -249,7 +259,7 @@ if is_chat_msg(msg) or is_super_group(msg) then
 					end
 				end
 				local print_name = msg.from.print_name
-				local is_rtl_name = print_name:match("‮")
+				local is_rtl_name = print_name:match("?")
 				if is_rtl_name and lock_rtl == "yes" then
 					savelog(msg.to.id, name_log.." User ["..msg.from.id.."] joined and kicked (#RTL char in name)")
 					kick_user(user_id, msg.to.id)
@@ -272,7 +282,7 @@ if is_chat_msg(msg) or is_super_group(msg) then
 					end
 				end
 				local print_name = msg.action.user.print_name
-				local is_rtl_name = print_name:match("‮")
+				local is_rtl_name = print_name:match("?")
 				if is_rtl_name and lock_rtl == "yes" then
 					savelog(msg.to.id, name_log.." User ["..msg.from.id.."] added ["..user_id.."]: added user kicked (#RTL char in name)")
 					kick_user(user_id, msg.to.id)

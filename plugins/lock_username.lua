@@ -20,7 +20,7 @@ end
 return {
   patterns = {
   "@",
-  "#",
+  "@[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]",
   "^@[%a%d]"
   },
   run = run
